@@ -1,4 +1,5 @@
 from flask import Blueprint
+from ..models import Permission
 '''
 在单脚本中，程序实例会在与全局作用域中
 路由可以直接使用app.route修饰符定义
@@ -13,7 +14,9 @@ from flask import Blueprint
 
 main = Blueprint('main',__name__)
 
-
+@main.app_context_processor
+def inject_permissions():
+    return dict(Permission=Permission)
 
 from . import views, errors
 #模块在末尾导入的原因是为了避免循环导入依赖
