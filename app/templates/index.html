@@ -1,0 +1,29 @@
+{#
+extends指令声明这个模板衍生自base.html
+在extends指令之后，基模板中的三个块被重新定义
+模板引擎会将其插入适当的位置
+注意新定义的head块。在基模板中其内容不是空的
+所以使用super()获取原来的内容
+#}
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}Index{% endblock %}
+{% block head %}
+    {{ super() }}
+<style></style>
+{% endblock %}
+
+{% block page_content %}
+    <p>The local data and time is {{ moment(current_time).format('LLL') }}.</p>
+    <p>That was {{ moment(current_time).fromNow(refresh=True) }}</p>
+    <h1> Hello World!</h1>
+    <div class = "page-header">
+        <h1>Hello,{% if name %}{{ name }} {% else %} Stranger{% endif %}</h1>
+        {% if not known %}
+            <p>Pleased to meet you!</p>
+        {% else %}
+            <p>Happy to see you again!</p>
+        {% endif %}
+    </div>
+    {{ wtf.quick_form(form) }}
+{% endblock %}
