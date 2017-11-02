@@ -16,7 +16,13 @@ extends指令声明这个模板衍生自base.html
 {% block page_content %}
     <p>The local data and time is {{ moment(current_time).format('LLL') }}.</p>
     <p>That was {{ moment(current_time).fromNow(refresh=True) }}</p>
-    <h1> Hello World!</h1>
+    Hello,
+    {% if current_user.is_authenticated() %}
+    {{ current_user.username }}
+    {% else %}
+    Stranger
+    {% endif %}!
+    {#  <h1> Hello World!</h1>
     <div class = "page-header">
         <h1>Hello,{% if name %}{{ name }} {% else %} Stranger{% endif %}</h1>
         {% if not known %}
@@ -24,6 +30,6 @@ extends指令声明这个模板衍生自base.html
         {% else %}
             <p>Happy to see you again!</p>
         {% endif %}
-    </div>
+    </div>#}
     {{ wtf.quick_form(form) }}
 {% endblock %}

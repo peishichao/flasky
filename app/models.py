@@ -2,6 +2,8 @@ from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from . import login_manager
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask import current_app
 '''
 Model
 '''
@@ -74,6 +76,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
+    confirmed = db.Column(db.Boolean, default=False)
 
     @property
     def password(self):
@@ -85,6 +88,36 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash,password)
     def __repr__(self):
         return '<User %r>' %self.username
-'''
+    '''
+    generate_confirmation_token() 方法生成一个令牌，有效期默认为一小时。 
+    confirm() 方法检验令牌，如果检验通过，则把新添加的 confirmed 属性设为 True 。
+    除了检验令牌， confirm() 方法还检查令牌中的 id 是否和存储在 current_user 中的已登录
+    用户匹配。如此一来，即使恶意用户知道如何生成签名令牌，也无法确认别人的账户。
+    '''
+    def generate_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
 
+        return s.dumps({'confirm': self.id})
+
+    def confirm(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
+'''
+itsdangerous 提供了多种生成令牌的方法。其中， TimedJSONWebSignatureSerializer 类生成
+具有过期时间的 JSON Web 签名（JSON Web Signatures，JWS）。这个类的构造函数接收
+的参数是一个密钥，在 Flask 程序中可使用 SECRET_KEY 设置。
+dumps() 方法为指定的数据生成一个加密签名，然后再对数据和签名进行序列化，生成令
+牌字符串。 expires_in 参数设置令牌的过期时间，单位为秒。
+为了解码令牌，序列化对象提供了 loads() 方法，其唯一的参数是令牌字符串。这个方法
+会检验签名和过期时间，如果通过，返回原始数据。如果提供给 loads() 方法的令牌不正
+确或过期了，则抛出异常。
 '''
