@@ -3,8 +3,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
+from flask import current_app,request
 from flask_login import UserMixin, AnonymousUserMixin
+from datetime import datetime
+import hashlib
+
 '''
 Model
 '''
@@ -102,7 +105,12 @@ user_role = Role.query.filter_by(name='User').first()
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+'''
 
+两个时间戳的默认值都是当前时间。注意， datetime.utcnow 后面没有 () ，因为 db.Column()
+的 default 参数可以接受函数作为默认值，所以每次需要生成默认值时， db.Column() 都会
+调用指定的函数。
+'''
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -112,7 +120,10 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
 
+    def ping(self):
+        self.last_seen = datetime.utcnow()
 
+        db.session.add(self)
     def __int__(self,**kwargs):
         super(User, self).__init__(**kwargs)
         if self.role is None:
@@ -160,6 +171,16 @@ class User(UserMixin, db.Model):
         self.confirmed = True
         db.session.add(self)
         return True
+
+    def gravatar(self, size=100, default='identicon', rating='g'):
+        if request.is_secure:
+            url = 'https://secure.gravatar.com/avatar'
+
+        else:
+            url = 'http://www.gravatar.com/avatar'
+            hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
+            url=url, hash=hash, size=size, default=default, rating=rating)
 '''
 itsdangerous 提供了多种生成令牌的方法。其中， TimedJSONWebSignatureSerializer 类生成
 具有过期时间的 JSON Web 签名（JSON Web Signatures，JWS）。这个类的构造函数接收
