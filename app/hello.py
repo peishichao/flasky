@@ -118,7 +118,7 @@ app.config['SECRET_KEY'] = 'dfvdf@#$HKUIyibb'
 ubuntu$export MAIL_USERNAME = <Gmail username>
 windows$set MAIL_USERNAME = <Gmail username>
 '''
-app.config['SQLALCHEMY_DATABASE_URL'] = 'sqlite:///' + os.path.join(basedir,'data.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir,'data.sqlite')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 #Email
 
