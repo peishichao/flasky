@@ -7,6 +7,8 @@ extends指令声明这个模板衍生自base.html
 #}
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+{% include '_posts.html' %}
 {% block title %}Index{% endblock %}
 {% block head %}
     {{ super() }}
@@ -32,4 +34,13 @@ extends指令声明这个模板衍生自base.html
         {% endif %}
     </div>#}
     {{ wtf.quick_form(form) }}
+    <div>
+    {% if current_user.can(Permission.WRITE_ARTICLES) %}
+    {{ wtf.quick_form(form) }}
+    {% endif %}
+    <div class="pagination">
+        {{ macros.pagination_widget(pagination, '.index') }}
+    </div>
+    </div>
+
 {% endblock %}

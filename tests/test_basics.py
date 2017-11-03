@@ -1,6 +1,7 @@
 import unittest
 from flask import current_app
 from app import create_app, db
+
 '''
 测试时使用Python标准库的unittest包编写的
 setup()和tearDown() 方法分别是在测试前后运行
