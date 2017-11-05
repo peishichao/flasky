@@ -11,6 +11,14 @@ import hashlib
 '''
 Model
 '''
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer,db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer,db.ForeignKey('users.id'),
+                            primary_key=True)
+    timestamp = db.Column(db.DateTime,default=datetime.utcnow)
+
 
 class Post(db.Model):
     __tablename__ = 'posts'
@@ -148,6 +156,42 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
     posts = db.relationship('Post',backref='author',lazy='dynamic')
+    followed = db.relationship('Follow',
+                               foreign_keys = [Follow.followers_id],
+                               backref = db.backref('follower',lazy='joined'),
+                               lazy = 'dynamic',
+                               cascade = 'all,delete-orphan')
+    followers = db.relationship('Follow',
+                                foreign_keys = [Follow.followed_id],
+                                backref = db.backref('followed',lazy='joined'),
+                                lazy = 'dynamic',
+                                cascade = 'all,delete-orphan')
+
+
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow,Follow.followed_id == Post.author_id)\
+                .filter(Follow.follower_id == self.id)
+    def follow(self,user):
+        if not self.is_following(user):
+            f = Follow(follower = self,followed = user)
+            db.session.add(f)
+    def unfollow(self,user):
+        f = self.followed.filter_by(followed_id = user.id).first()
+        if f:
+            db.session.delete(f)
+    def is_following(self,user):
+        return self.followed.filter_by(followed_id = user.id).first() is not None
+    def is_followed_by(self,user):
+        return self.followers.filter_by(follower_id=user.id).first() is not None
+
     def ping(self):
         self.last_seen = datetime.utcnow()
 
@@ -248,3 +292,29 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
 login_manager.anonymous_user = AnonymousUser
+
+'''
+registrations = db.Talbe('registrations',
+                db.Column('student_id',db.Integer,db.ForeignKey('stundents.id')),
+                db.Column('class_id',db.Integer,db.ForeignKey('classes.id')))
+class Student(db.Model):
+    id = db.Column(db.Integer,primary_key=True)
+    name = db.Column(db.String)
+    classes = db.relationship('Class',secondary = registrations,
+                                backref = db.backref('students',lazy='dynamic'),
+                                lazy = 'dynamic')
+class Class(db.Model):
+    id = db.Column(db.Integer,primary_key = True)
+    name = db.Column(db.String)
+    stundets = db.relationship('Student',secondary = registrations,
+                                backref = db.backref('classes',lazy = 'dynamic'),
+                                lazy = 'dynamic')
+
+多对多关系仍然使用定义一对多关系的db.relationship方法进行定义，但在多对多的关系中
+必须把secondary参数设为关联表。多对多关系可以在任何一个类中定义，backref参数会处理好关系的另一侧
+关联表就是一个简单的表，而不是模型
+
+多对多的关系可以实现用户之间的关注，但是还有一个问题，就是关联表连接的是两个明确的实体
+但是表示用户关注其他用户时候，只有用户一个实体
+                                
+'''
