@@ -1,46 +1,35 @@
-{#
-extends指令声明这个模板衍生自base.html
-在extends指令之后，基模板中的三个块被重新定义
-模板引擎会将其插入适当的位置
-注意新定义的head块。在基模板中其内容不是空的
-所以使用super()获取原来的内容
-#}
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "_macros.html" as macros %}
-{% include '_posts.html' %}
-{% block title %}Index{% endblock %}
-{% block head %}
-    {{ super() }}
-<style></style>
-{% endblock %}
+
+{% block title %}Flasky{% endblock %}
 
 {% block page_content %}
-    <p>The local data and time is {{ moment(current_time).format('LLL') }}.</p>
-    <p>That was {{ moment(current_time).fromNow(refresh=True) }}</p>
-    Hello,
-    {% if current_user.is_authenticated() %}
-    {{ current_user.username }}
-    {% else %}
-    Stranger
-    {% endif %}!
-    {#  <h1> Hello World!</h1>
-    <div class = "page-header">
-        <h1>Hello,{% if name %}{{ name }} {% else %} Stranger{% endif %}</h1>
-        {% if not known %}
-            <p>Pleased to meet you!</p>
-        {% else %}
-            <p>Happy to see you again!</p>
-        {% endif %}
-    </div>#}
-    {{ wtf.quick_form(form) }}
-    <div>
+<div class="page-header">
+    <h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Stranger{% endif %}!</h1>
+</div>
+<div>
     {% if current_user.can(Permission.WRITE_ARTICLES) %}
     {{ wtf.quick_form(form) }}
     {% endif %}
-    <div class="pagination">
-        {{ macros.pagination_widget(pagination, '.index') }}
-    </div>
-    </div>
+</div>
+<div class="post-tabs">
+    <ul class="nav nav-tabs">
+        <li{% if not show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_all') }}">All</a></li>
+        {% if current_user.is_authenticated %}
+        <li{% if show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_followed') }}">Followers</a></li>
+        {% endif %}
+    </ul>
+    {% include '_posts.html' %}
+</div>
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.index') }}
+</div>
+{% endif %}
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
 {% endblock %}
